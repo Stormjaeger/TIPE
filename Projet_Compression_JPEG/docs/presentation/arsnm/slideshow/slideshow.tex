@@ -1,0 +1,641 @@
+\documentclass[aspectratio=43]{beamer}
+
+\usepackage[french]{babel}
+\usepackage{caption}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amsfonts, amssymb, mathtools}
+\usepackage{stmaryrd}
+\usepackage{fancyhdr}
+\usepackage{lipsum}
+\usepackage{graphicx}
+\usepackage[ddmmyyyy]{datetime}
+\usepackage{adjustbox}
+\usepackage[explicit]{titlesec}
+\usepackage{pdfpages}
+\usepackage{tikz}
+\usepackage{pifont}
+\usepackage{fontawesome5}
+
+\usetheme{Madrid}
+
+\definecolor{white}{gray}{0.98}
+\definecolor{green}{HTML}{92D050}
+\usefonttheme[onlymath]{serif}
+
+\makeatletter
+\definecolor{beamer@blendedblue}{HTML}{3294A8} % changed this
+
+
+\title[Compression]{TIPE - LA COMPRESSION DE DONN\'EES}
+\subtitle{Et son application aux images}
+\author{Ars\`ene MALLET}
+\date[\today]{\today}
+\institute{Candidat - 14873}
+
+\begin{document}
+
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+\begin{frame}
+    \frametitle{Introduction}
+
+    \begin{itemize}
+        \setlength\itemsep{2em}
+        \item \Large \textbf{Compression} : \textcolor{red}{maximum} d'informations avec une taille \textcolor{green}{minimal}
+        \item Deux types : \textbf{avec} (lossy) ou \textbf{sans} perte (lossless).
+        \item \large Dans le domaine urbain : beaucoup d'informations $\rightarrow$ compression $\Rightarrow$ \bfseries stocker et traiter efficacement
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Proc\'ed\'es de Compression}
+
+    \begin{itemize}
+        \Large
+        \setlength\itemsep{2em}
+        \item Compression sans perte : \textbf{entropique} et \textbf{algorithmique}
+        \item Une \textbf{réorganisation} des données
+        \item Application de \textbf{transformées mathématiques}
+        \item Implémentation de l'\textbf{algorithme JPEG}
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}
+    \frametitle[allowframebreaks]{Entropie et Codage Optimal (1)}
+
+    \begin{block}{Th\'eorie de l'Information de Shannon}
+        Théorie probabiliste \textbf{quantifiant l’information} d’un ensemble de messages.
+    \end{block}
+    
+    \vspace*{1em}
+
+    \begin{alertblock}{Définition - Entropie}
+        Pour une source $X$ comportant $n$ symboles, un symbole $x_i$ ayant
+        une probabilité $p_i = \mathbb{P}(X = x_i)$ d’apparaître, l'entropie $H$ est définie par : 
+        $$ H(X) = - \sum_{i = 1}^{n} p_i \log_2 (p_i) $$
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Entropie et Codage Optimal (2)}
+
+    \begin{alertblock}{Définition - \bfseries Code de Source}
+        Un \textbf{code de source C} pour une variable aléatoire $X$ de distribution de probabilité $p$, est une application de $\Omega$ (ensemble des symboles sources) vers $A^*$
+        (où $A$ est l'alphabet du code).
+    \end{alertblock}
+
+    \vspace*{2em}
+
+    \begin{alertblock}{Définition - Code \bfseries Uniquement Décodable}
+        Un code est dit \textbf{uniquement décodable} si
+        $$ \forall x, y \in \Omega^+, \; x \neq y \implies C^+(x) \neq C^+(y)$$
+    \end{alertblock}
+\end{frame}
+    
+\begin{frame}
+    \frametitle{Entropie et Codage Optimal (3)}
+
+    \begin{alertblock}{Définition - Code \bfseries Préfixe}
+        Un code est dit préfixe si \textbf{aucun mot de code n'est le préfixe d'un autre mot} de code
+    \end{alertblock}
+
+    \textit{Rq. :} Code \textbf{préfixe} $\implies$ code \textbf{uniquement décodable}
+
+    \vspace*{3em}
+
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \centering 
+            Un code \bfseries non-préfixe \\
+            \begin{tabular}{c | c}
+                \hline
+                $a$ & $0$ \\
+                $b$ & $1$ \\
+                $c$ & $01$ \\ \hline
+            \end{tabular} \\
+        \vspace*{1em}
+        $ab = 01 = c \rightarrow$ \textbf{\alert{Non} uniquement décodable}
+        \end{column}
+
+        \begin{column}{0.5\textwidth} %%
+            \centering
+            Un code \textbf{préfixe} \\
+            \begin{tabular}{c | c}
+                \hline
+                $a$ & $0$ \\
+                $b$ & $10$ \\
+                $c$ & $11$ \\ \hline
+            \end{tabular} \\
+            \vspace*{1em}
+            Chaque code est \textbf{unique}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Entropie et Codage Optimal (4)}
+
+    \begin{block}{Inégalité de Kraft}
+        Pour un code défini sur un alphabet de taille D, et un alphabet de source $\Omega$ de taille 
+$|\Omega|$, alors il est \textbf{préfixé} si et seulement si $$\sum _{{i=1}}^{{|\Omega |}}D^{{-l_{i}}}\leq 1$$
+$l_i =$ longueur des mots du codes
+    \end{block}
+
+    \vspace*{2em}
+
+    \begin{alertblock}{Théorème du Codage de Source - Shannon 1948}
+        Lorsque l'efficacité de la compression augmente, la longueur moyenne du code tend vers l'entropie $H$.
+    \end{alertblock}
+    
+\end{frame}
+
+\begin{frame}
+    \frametitle{Codage De Huffman (1)}
+
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \centering
+
+            \begin{itemize}
+                \item Codage \textbf{optimal} au niveau \textbf{symbole}, à longueur \textbf{variable}
+                \item Impose un \textbf{nombre entier de bits} pour un symbole
+                \item Exemple de codage de \\ "LES VILLES" :
+            \end{itemize}
+
+            \vspace*{2em}
+
+            \begin{tabular}{c | c}
+                symbole source & fréquence \\
+                \hline
+                L & $3$ \\
+                E & $2$ \\
+                S & $2$ \\
+                V & $1$ \\
+                I & $1$ \\ \hline
+            \end{tabular}
+        \end{column}
+
+        \begin{column}{0.5\textwidth}
+            \textbf{Arbre de Huffman} de "LES VILLES"
+
+            \vspace*{2em}
+
+            \includegraphics{img/huffmanExample/huffmanExample.pdf}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Codage De Huffman (2)}
+
+    \begin{columns}
+
+        \begin{column}{0.5\textwidth}
+            \textbf{Arbre de Huffman} de "LES VILLES"
+
+            \vspace*{2em}
+
+            \includegraphics{img/huffmanExample/huffmanExample.pdf}
+        \end{column}
+
+        \begin{column}{0.5\textwidth}
+            \centering
+
+            \begin{itemize}
+                \item \textbf{Table de code} de Huffman
+
+            \vspace*{1em}
+
+            \begin{tabular}{c | c}
+                symbole source & code \\
+                \hline
+                L & $11$ \\
+                E & $10$ \\
+                S & $01$ \\
+                V & $000$ \\
+                I & $001$ \\ \hline
+            \end{tabular}
+            
+            \vspace*{2em}
+
+            \item \textbf{Code} de Huffman : $11100100000111111001$
+        \end{itemize}
+
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Codage Arithmétique (1)}
+
+    \begin{itemize}
+        \item Codage \textbf{optimal} au niveau \textbf{bit}, à longueur \textbf{variable}
+        \item Principe : codage \textbf{par morceaux} et non par symbole (Huffman)
+        \item Exemple de codage de "VILLE":
+    \end{itemize}
+
+    \vspace*{1em}
+    
+    {
+    \centering
+    \begin{tabular}{c | c | c}
+        symbole source & probabilité & intervalle  \\
+        \hline
+        V & $1/5$ & $[0; 0,2[$ \\ 
+        I & $1/5$ & $[0,2; 0,4[$\\
+        L & $2/5$ & $[0,4; 0,8[$\\
+        E & $1/5$ & $[0,8; 1[$\\ \hline
+    \end{tabular}\par
+    }
+
+    \vspace*{1em}
+
+    \textbf{Ajout} d'un symbole $s$: \\
+    \begin{enumerate}
+        \item $BB = BS - BI$
+        \item $BS \leftarrow BI + BB \times BS_s$
+        \item $BI \leftarrow BI + BB \times BI_s$
+    \end{enumerate}
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Codage Arithmétique (2)}
+
+    {
+    \centering
+    \begin{tabular}{c | c | c}
+        symbole source & probabilité & intervalle  \\
+        \hline
+        V & $1/5$ & $[0; 0.2[$ \\ 
+        I & $1/5$ & $[0.2; 0.4[$\\
+        L & $2/5$ & $[0.4; 0.8[$\\
+        E & $1/5$ & $[0.8; 1[$\\ \hline
+    \end{tabular}\par
+    }
+    
+    \vspace*{1em}
+
+    Ajout de $s = $ V : \\
+    $BS = BB = 1$, $BI = 0$, $BS_s = 0.2,\; BI_s = 0$ \\
+    $BS \leftarrow 0 + 1 \times 0.2 = 0.2$ \\
+    $BI \leftarrow 0 + 1 \times 0 = 0$ \\
+
+    \vspace*{1em}
+
+    Ajout, ensuite, de $s'=$ I : \\
+    $BS = BB = 0.2$, $BI = 0$, $BS_{s'} = 0.4, \; BI_{s'} = 0.2$ \\
+    $BS \leftarrow 0 + 0.2 \times 0.4 = 0.08$ \\
+    $BI \leftarrow 0 + 0.2 \times 0.2 = 0.04$ \\
+
+    \vspace*{0.5em}
+
+    \dots
+\end{frame}
+
+\begin{frame}
+    \frametitle{Codage Arithmétique (3)}
+
+    {
+    \centering
+    \begin{tabular}{c | c | c}
+        symbole source & probabilité & intervalle  \\
+        \hline
+        V & $1/5$ & $[0; 0.2[$ \\ 
+        I & $1/5$ & $[0.2; 0.4[$\\
+        L & $2/5$ & $[0.4; 0.8[$\\
+        E & $1/5$ & $[0.8; 1[$\\ \hline
+    \end{tabular}\par
+    }
+
+    \vspace*{1em}
+
+    Code de "VILLE" : $x \in [0.06752 ; 0.0688]$ \\
+    Par exemple $x = 0.068$ fonctionne.
+
+    \vspace*{1em}
+
+    \textbf{Décompression}: \\
+    \begin{enumerate}
+        \item $x \in [0; 0.2] \rightarrow$ V
+        \item $x \leftarrow \frac{x - BI_V}{p_V} = 0.34$
+        \item $x \in [0.2; 0.4] \rightarrow$ VI
+        \item $x \leftarrow \frac{x - BI_I}{p_I} = 0.7$
+        \item [\dots] 
+        \item Mot \textbf{décodé} : VILLE
+    \end{enumerate}
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{La Représentation d'Image}
+
+    \centering
+
+    Image = $\begin{pmatrix}
+        (r,g,b)_{1,1} & \dots & (r, g, b)_{1,p} \\
+        \vdots & \ddots & \vdots \\
+        (r,g,b)_{n, 1} & \dots & (r, g, b)_{n, p} \\
+    \end{pmatrix}$
+
+    \vspace*{2em}
+
+    \includegraphics[width=0.8\textwidth]{img/diff_rgb.png}
+
+    \tiny\raggedleft
+    \href{https://a2f6z9k6.rocketcdn.me/wp-content/uploads/2019/11/ville_lyon-scaled.jpg}{Référence Image: \textit{laou.fr}}
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{La Représentation YCbCr}
+
+    \begin{block}{Transformation YCbCr}
+        \begin{align*}
+            \varphi \colon \llbracket 0, 255 \rrbracket^3 & \rightarrow \llbracket 0, 255 \rrbracket \times \llbracket -128, 127 \rrbracket^2 \\
+            X = (r, g, b) & \longmapsto
+            TX = (Y, Cb, Cr)
+          \end{align*}
+
+      \vspace*{1em}
+
+      $ T = 255\begin{pmatrix}
+        K_r & K_r & K_b \\
+        - \frac{1}{2} \cdot \frac{K_r}{1 - K_b} & - \frac{1}{2} \cdot \frac{K_g}{1 - K_b} & \frac{1}{2} \\
+        \frac{1}{2} & - \frac{1}{2} \cdot \frac{K_g}{1 - K_r} & - \frac{1}{2} \cdot \frac{K_b}{1 - K_r} \\
+      \end{pmatrix}$ et $K_r + K_g + K_b = 1$
+    \end{block}
+    \textit{Rq.} : En général $K_r = 0.299,\; K_g = 0.587, \; K_b = 0.114$
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{La Représentation YCbCr (2)}
+    
+    \centering
+    \includegraphics[width=\textwidth]{img/diff_YCbCr.png}
+
+    \textbf{\OE{il} humain} $\rightarrow$ Y \textbf{prédomine}, Cb et Cr moins importants
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Sous-\'Echantillonage}
+
+    \begin{itemize}
+        \item \textbf{Principe} : Cb, Cr moins importants -> \textbf{moyenner} ces valeurs sur \textbf{plusieurs pixels}
+        \item Exemples de \textbf{sous-échantillonnages}: 
+    \end{itemize}
+
+    {\centering
+    \includegraphics[width=0.7\textwidth]{img/chromaSubSampling.png} \\}
+
+    \tiny
+    \href{https://upload.wikimedia.org/wikipedia/commons/f/f2/Common_chroma_subsampling_ratios.svg}{Référence Schéma: \textit{wikipedia.org}}
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{DCT (transformée en cosinus discrète) (1)}
+    \centering
+    \begin{block}{Transformation DCT}
+        \begin{align*}
+            \psi \colon \mathbb{R}^N & \rightarrow \mathbb{R}^N\\
+            (x_0, \dots, x_{N-1}) & \longmapsto
+            \left( \sum_{n=0}^{N - 1} x_n \cos \left[ \frac{\pi}{N}(n + \frac{1}{2})k \right] \right)_{k \in \llbracket 0, N - 1 \rrbracket}
+        \end{align*}
+        On peut rendre la matrice associée à $\psi$ \textbf{orthogonale} en multipliant le terme $X_0$ par $\frac{1}{\sqrt{N}}$ et toute la matrice par $\sqrt{2/N}$.
+    \end{block}
+    2D-DCT $\rightarrow$ $\psi$ sur chaque ligne puis chaque colonne
+\end{frame}
+
+\begin{frame}
+    \frametitle{DCT (2)}
+
+    \begin{itemize}
+        \item \textbf{"Continuité"} des images $\rightarrow$ peu de variations des \textbf{hautes fréquences}
+        \item \textbf{Compactage} de l'énergie vers les \textbf{basses fréquences}
+    \end{itemize}
+
+    \centering
+    \includegraphics[width=\textwidth]{img/energyCompaction.png}
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Quantification}
+
+    \begin{itemize}
+        \item Seule étape \textbf{avec perte} de la compression \textbf{JPEG}
+        \item \textbf{Réduction} des coefficients
+        \item \textbf{Différence} entre Y, Cb et Cr
+        \item Fonction de quantification : \begin{align*}
+            \varepsilon \colon \mathcal{M}_{8,8}(\mathbb{Z})^2 & \rightarrow \mathcal{M}_{8,8}(\mathbb{Z})\\
+            Q, B & \longmapsto \lfloor B / Q \rfloor
+        \end{align*}
+        \item Souvent $Q$ dépend d'un \textbf{facteur de qualité} $q$ (dans notre cas : $q \in \llbracket 1, 100 \rrbracket$)
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Codage par plages (Run-Length Encoding)}    
+
+    \begin{itemize}
+        \item Tire son avantage des \textbf{répétitions} de symboles  
+        \item Exemple : $$\underbrace{AAAA}_{4 \times A} \underbrace{B}_{1 \times B} \underbrace{CCC}_{3 \times C} \underbrace{BBBBBBB}_{7 \times B} \xrightarrow[RLE]{} A4B1C3B7$$
+        $15$ caractères $\rightarrow$ $8$ caractères 
+        \item Pour faire apparaître ces répétitions dans les \textbf{images}, lecture de la matrice en \textbf{zigzag}: \\
+        \centering\includegraphics[width=0.2\textwidth]{img/zigzag.png}
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Exemple de Compression}
+
+    \centering
+    Image Originale \\
+    \includegraphics[width = 0.8\textwidth]{img/villeLyon.jpg} \\
+    Taille : 10,3 Mo
+\end{frame}
+
+\begin{frame}
+    \frametitle{Exemple de Compression}
+
+    \centering
+    Image Compressée ($q = 100$, $4:4:4$) (presque \textbf{lossless}) \\
+    \includegraphics[width = 0.8\textwidth]{img/villeLyon.jpg} \\
+    Taille : 2,2 Mo \\
+    \textbf{Ratio} : $\eta = \frac{T_{init}}{T_{compres}} = 4.68 $
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Exemple de Compression}
+
+    \centering
+    Image Compressée ($q = 50$, $4:2:2$) \\
+    \includegraphics[width = 0.8\textwidth]{img/villeLyonMid.jpg} \\
+    Taille : 519 Ko \\
+    \textbf{Ratio} : $\eta = \frac{T_{init}}{T_{compres}} = 19.8$
+    
+\end{frame}
+
+\begin{frame}
+    \frametitle{Exemple de Compression}
+
+    \centering
+    Image Compressée ($q = 5$, $4:1:1$) \\
+    \includegraphics[width = 0.8\textwidth]{img/villeLyonLow.jpg} \\
+    Taille : 77 Ko \\
+    \textbf{Ratio} : $\eta = \frac{T_{init}}{T_{compres}} = 134$
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Comparaison (1)}
+
+    \centering
+    \includegraphics[width=\textwidth]{img/compressionComparaison.png} \\
+    \textbf{Conclusion} : JPEG \textbf{plus efficace} lorsque la \textbf{qualité baisse} 
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Comparaison (2)}
+
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/compressionComparaison2.png} \\
+    \textbf{Conclusion} : Le \textbf{gain en espace} est proportionnellement \textbf{inférieure} au \textbf{gain en temps}
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Effectué}
+
+    \begin{itemize}
+        \item[\checkmark] \textbf{\'Etude théorique} des moyens de compression
+        \item[\checkmark] \textbf{Implémentation} des méthodes de compression en \textbf{python} \faPython
+        \item[\checkmark] \textbf{Implémentation} d'un encoder JPEG utilisant le \textbf{codage de Huffman} en \textbf{python} \faPython
+        \item[$\times$]  \textbf{Implémentation} d'un encoder JPEG utilisant le \textbf{codage arithmétique} en \textbf{python} \faPython
+        \item[$\sim$] Comparaison des méthodes de compression sur des images
+            \begin{itemize}
+                \item[\checkmark] Comparaison en fonction du \textbf{facteur de qualité}
+                \item[\checkmark] Comparaison en fonction du \textbf{codage de Huffman}
+                \item[$\times$] Comparaison en fonction du \textbf{codage entropique} (Huffman ou Arithmétique)  
+            \end{itemize}
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Annexe - Démonstration Inégalité de Kraft (1)}
+
+    \small
+    Pour toute la démonstration, on considère un codage $h$ ayant la propriété du préfixe. Soit $s_1, \dots , s_k$ et $l_1, \dots , l_k$ les mots codes et leur
+    longueur. \\
+    On considère le cas où la taille de l'alphabet $D = 2$ (binaire), l'inégalité de Kraft s'écrit donc :
+    $$ \sum_{i = 1}^{k} 2^{-l_i} \leqslant 1$$
+    On note $m = \max l_i$ la plus grande longueur des mots codes. Comme le code a la propriété du préfixe, on
+    peut placer, de manière unique, ces mots codes sur un arbre $\mathcal{T}$ binaire équilibré de profondeur $m$ chaque mot code étant une feuille de cet arbre.
+    \\
+    On peut donc compter le nombre de feuilles issues du mot de code $s_i$ dans l'arbre complet binaire $\mathcal{T}$ de profondeur $m$
+    Comme le mot code est à la profondeur $l_i$, le n\oe{ud} correspondant est le père de $2^{m - l_i}$ feuilles à la profondeur $m$. \\
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Annexe - Démonstration Inégalité de Kraft (2)}
+
+    \small
+    Comme le codage a la propriété du préfixe les sous arbres issus des mots codes sont disjoints et donc le nombre
+    total de feuilles issues des mots codes à la profondeur $m$ est égal à
+    $$\sum_{i = 1}^{k} 2^{m-l_i}$$
+    Ce nombre de feuilles est inférieur ou égal au nombre total de feuilles à la profondeur $m$, c’est à dire à $2^m$. En écrivant cette inégalité on obtient : 
+    $$\sum_{i = 1}^{k} 2^{m-l_i} \leqslant 2^m \implies \sum_{i = 1}^{k} 2^{-l_i} \leqslant 1$$
+
+    \vspace*{2em}
+
+    La réciproque se montre en partant de l'arbre complet de profondeur $m$ et en construisant les mots codes à partir des $l_i$.
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Annexe - Démonstration Theorème du Codage de Source (1)}
+
+    \footnotesize
+    Pour cette démonstration, \textbf{on se limitera aux cas du codage par symboles} (type Huffman). \\
+    Montrons d'abord qu'étant donné un code uniquement décodable opérant sur une source $X$ qui peut prendre ses valeurs dans l’alphabet fini $A$ avec la
+    distribution de probabilité $p$ alors la longueur moyenne de ce code vérifie : \textbf{$H(X) \leqslant \bar{l}$}. \\
+    \vspace*{1em}
+    Si un code est uniquement décodable, il vérifie l'inégalité de Kraft, donc $\sum 2^{-l_i} \leqslant 1$. \\
+    On définie donc une nouvelle loi de probabilité : $q_i = a2^{-l_i}$ avec $a \geqslant 1$ tel que $\sum q_i = 1$.
+    L'inégalité de Gibbs (admise) donne : \begin{align*}
+        - \underbrace{\sum p_i \log_2 (p_i)}_{= H(X)} & \leqslant - \sum p_i \log_2 (q_i) \\
+        & = - \sum p_i \log_2 (a2^{-l_i}) \\
+        & = \underbrace{-\sum p_i \log_2 (\underbrace{a}_{\geqslant 1})}_{\leqslant 0} + \underbrace{\sum p_i l_i}_{= \bar{l}} \\
+        \text{D'où } H(X) & \leqslant \bar{l}
+    \end{align*} 
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Annexe - Démonstration Theorème du Codage de Source (2)}
+
+    \footnotesize
+    Montrons dorénavant qu'il existe un code uniquement décodable pour la source $X$ de loi $p$
+    tel que la longueur moyenne du code vérifie $ \bar{l} < H(X) + 1$. \\
+    \vspace*{1em}
+    Pour tout $i$, notons $l_i \in \mathbb{N}^*$ tel que $2^{-l_i} \leqslant p_i < 2^{-l_i + 1}$. \\
+    On a alors \begin{align*}
+        &-l_i \leqslant \log_2 p_i < -l_i + 1 \\
+        \iff &-\log_2 p_i \leqslant l_i < -\log_2 p_k + 1 \\
+    \end{align*}
+    On alors directement : $H(X) \leqslant \bar{l} < H(X) + 1$
+    De plus $\sum 2^{l_k} \leqslant \sum 2^{\log_2 p_k} = 1$ \\
+    L'inégalité de Kraft est donc vérifiée, on peut donc effectivement construire ce code, \textbf{d'où le résultat}.
+
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Annexe - Exemple Matrice de Quantification}
+
+    \centering
+    \includegraphics[width=0.9\textwidth]{img/typicalQuantazationMatrix.png} \\
+    
+    \raggedleft\tiny
+    \href{https://www.researchgate.net/profile/Sanjeeb-Dash/publication/7019577/figure/fig2/AS:601713178320896@1520471009224/Examples-of-JPEG-quantization-tables-for-8-2-8-DCT-blocks-The-resulting-YCbCr-space-is.png}{Référence Image: \textit{researchgate.net}}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Annexe - Listing Programmation}
+
+    \begin{itemize}
+        \item ycbcr.py $\rightarrow$ slides 34-35
+        \item huffman.py $\rightarrow$ slides 35-37
+        \item fft.py $\rightarrow$ slides 38-41
+        \item complex.py $\rightarrow$ slides 41-46
+        \item arithmetic\_coding.py $\rightarrow$ slides 46-49        
+        \item utils.py $\rightarrow$ slides 49-61
+        \item huffman\_jpeg.py $\rightarrow$ slides 61-75
+        \item encoder.py $\rightarrow$ slides 75-82
+        \item comparator.py $\rightarrow$ slides 82-91
+    \end{itemize}
+
+\end{frame}
+
+{
+\setbeamercolor{background canvas}{bg=}
+\foreach \n in{1,...,58}  {
+\includepdf[pages=\n]{img/code/allCodeLandscape_compressed.pdf}
+}
+}
+
+\end{document}
